@@ -1,136 +1,137 @@
+# Importando bibliotecas.
+
 import cv2
 import os
 import numpy as np
 
-# Inicializa a webcam
-webcam = cv2.VideoCapture(0)
 
-# Inicializa o classificador de rostos
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+# Inicializa a webcam e retorna o objeto de captura.
+def inicializar_webcam():
+    return cv2.VideoCapture(0)
 
-# Diretório para salvar as imagens capturadas
-face_dir = 'faces/'
-if not os.path.exists(face_dir):
-    os.makedirs(face_dir)
 
-# Nome da pessoa sendo capturada
-person_name = input("Digite o nome da pessoa: ")
-person_dir = face_dir + person_name
-if not os.path.exists(person_dir):
-    os.makedirs(person_dir)
+# Cria um diretório para as faces das pessoas.
+def criar_diretorio_faces(nome_pessoa):
 
-count = 0
-while True:
-    ret, frame = webcam.read()
+    diretorio_faces = 'face-detector/faces/'
+    diretorio_pessoa = os.path.join(diretorio_faces, nome_pessoa)
     
-    # Converte para escala de cinza
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    if not os.path.exists(diretorio_faces):
+        os.makedirs(diretorio_faces)
     
-    # Detecta rostos
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
+    if not os.path.exists(diretorio_pessoa):
+        os.makedirs(diretorio_pessoa)
     
-    for (x, y, w, h) in faces:
-        # Desenha um retângulo ao redor do rosto
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    return diretorio_pessoa
+
+
+# Captura imagens do rosto da pessoa e salva no diretório especificado.
+def capturar_faces(webcam, diretorio_pessoa):
+
+    classificador_faces = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    contador = 0  # Contador para o número de imagens capturadas.
+    
+    while contador < 100:
+        ret, quadro = webcam.read()  # Lê um quadro da webcam.
+        if not ret:
+            print("Falha ao capturar imagem.")
+            break
+            
+        imagem_cinza = cv2.cvtColor(quadro, cv2.COLOR_BGR2GRAY)  # Converte a imagem para escala de cinza.
+        rostos = classificador_faces.detectMultiScale(imagem_cinza, scaleFactor=1.1, minNeighbors=5)  # Detecta rostos.
         
-        # Salva a imagem do rosto
-        face_img = gray[y:y + h, x:x + w]
-        cv2.imwrite(f"{person_dir}/{count}.jpg", face_img)
-        count += 1
-
-    cv2.imshow("Captura de Rostos", frame)
-    
-    if cv2.waitKey(1) & 0xFF == ord('q') or count >= 50 : # Limita para 50 imagens.
-        break
-
-webcam.release()
-cv2.destroyAllWindows()
-
-# Caminho para as imagens
-face_dir = 'faces/'
-
-# Inicializa o LBPH reconhecedor
-recognizer = cv2.face.LBPHFaceRecognizer_create()
-
-# Inicializa o classificador de rostos
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-# Lista para armazenar dados de treino
-labels = []
-faces = []
-label_ids = {}
-current_id = 0
-
-# Carrega todas as imagens e associa com IDs
-for person_name in os.listdir(face_dir):
-    person_path = os.path.join(face_dir, person_name)
-    for img_name in os.listdir(person_path):
-        img_path = os.path.join(person_path, img_name)
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        for (x, y, w, h) in rostos:
+            imagem_rosto = imagem_cinza[y:y + h, x:x + w]  # Recorta a imagem do rosto.
+            cv2.imwrite(os.path.join(diretorio_pessoa, f"{contador}.jpg"), imagem_rosto)  # Salva a imagem do rosto.
+            contador += 1
+            
+        cv2.imshow("Captura de Rostos", quadro)  # Mostra o quadro com a captura.
         
-        face = img
-        faces.append(face)
-        labels.append(current_id)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+
+# Treina o reconhecedor de rostos com as imagens armazenadas e retorna o reconhecedor e os IDs dos rótulos.
+def treinar_reconhecedor(diretorio_faces):
+
+    reconhecedor = cv2.face.LBPHFaceRecognizer_create()  # Cria o reconhecedor LBPH.
+    rotulos = []  # Lista para armazenar rótulos (IDs).
+    faces = []  # Lista para armazenar imagens de rostos.
+    ids_rotulos = {}  # Dicionário para mapear IDs aos nomes.
     
-    label_ids[current_id] = person_name
-    current_id += 1
-
-# Treina o modelo com as imagens e IDs
-recognizer.train(faces, np.array(labels))
-
-# Salva o modelo treinado
-recognizer.save("face_trained.yml")
-
-# Carrega o modelo treinado
-recognizer = cv2.face.LBPHFaceRecognizer_create()
-recognizer.read("face_trained.yml")
-
-# Inicializa o classificador de rostos
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-# Mapeamento de IDs para nomes
-label_ids = {}  # Inicializa o dicionário para armazenar o mapeamento
-current_id = 0
-
-# Diretório das faces
-face_dir = 'faces/'
-
-# Carrega todas as imagens e associa com IDs
-for person_name in os.listdir(face_dir):
-    person_path = os.path.join(face_dir, person_name)
-    if os.path.isdir(person_path):  # Verifica se é um diretório
-        label_ids[current_id] = person_name  # Mapeia o ID para o nome da pessoa
-        current_id += 1
-
-# Inicia a webcam
-webcam = cv2.VideoCapture(0)
-
-while True:
-    ret, frame = webcam.read()
-    
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5)
-    
-    for (x, y, w, h) in faces:
-        face_img = gray[y:y + h, x:x + w]
+    id_atual = 0
+    for nome_pessoa in os.listdir(diretorio_faces):
+        caminho_pessoa = os.path.join(diretorio_faces, nome_pessoa)
         
-        # Tenta reconhecer o rosto
-        label, confidence = recognizer.predict(face_img)
+        for nome_imagem in os.listdir(caminho_pessoa):
+            caminho_imagem = os.path.join(caminho_pessoa, nome_imagem)
+            imagem = cv2.imread(caminho_imagem, cv2.IMREAD_GRAYSCALE)  # Lê a imagem em escala de cinza.
+            faces.append(imagem)  # Adiciona a imagem à lista de faces.
+            rotulos.append(id_atual)  # Adiciona o ID atual à lista de rótulos.
         
-        # Mostra o nome e confiança do rosto reconhecido
-        if confidence < 100:
-            name = label_ids.get(label, "Desconhecido")
-            cv2.putText(frame, f'{name}', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-        else:
-            cv2.putText(frame, 'Desconhecido', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        
-        # Desenha um retângulo ao redor do rosto
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-    
-    cv2.imshow("Reconhecimento Facial", frame)
-    
-    if cv2.waitKey(5) == 27:  # Pressione 'Esc' para sair
-        break
+        ids_rotulos[id_atual] = nome_pessoa  # Mapeia o ID ao nome da pessoa.
+        id_atual += 1  # Incrementa o ID para a próxima pessoa.
 
-webcam.release()
-cv2.destroyAllWindows()
+    reconhecedor.train(faces, np.array(rotulos))  # Treina o modelo.
+    reconhecedor.save("face_trained.yml")  # Salva o modelo treinado.
+    
+    return reconhecedor, ids_rotulos
+
+
+# Reconhece rostos usando o modelo treinado e exibe os resultados na tela.
+def reconhecer_faces(webcam, reconhecedor, ids_rotulos):
+
+    classificador_faces = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    
+    while True:
+        ret, quadro = webcam.read()  # Lê um quadro da webcam.
+        if not ret:
+            print("Falha ao capturar imagem.")
+            break
+            
+        imagem_cinza = cv2.cvtColor(quadro, cv2.COLOR_BGR2GRAY)  # Converte a imagem para escala de cinza.
+        rostos = classificador_faces.detectMultiScale(imagem_cinza, scaleFactor=1.1, minNeighbors=5)  # Detecta rostos.
+
+        for (x, y, w, h) in rostos:
+            imagem_rosto = imagem_cinza[y:y + h, x:x + w]  # Recorta a imagem do rosto.
+            rotulo, confianca = reconhecedor.predict(imagem_rosto)  # Tenta reconhecer o rosto.
+            
+            # Ajuste no limite de confiança.
+            limite_confianca = 60  # Valor mais baixo significa maior confiança.
+            if confianca < limite_confianca:  # Somente reconhece se a confiança for alta.
+                nome = ids_rotulos.get(rotulo, "Desconhecido")  # Obtém o nome pelo ID.
+                cor_texto = (255, 0, 0)  # Cor azul para rostos reconhecidos.
+            else:
+                nome = "Desconhecido"  # Se a confiança for baixa, considera como desconhecido.
+                cor_texto = (0, 0, 255)  # Cor vermelha para rostos desconhecidos.
+            
+            # Adiciona texto ao quadro
+            # Adicionar confiança para aparecer ao lado do nome:  - {confianca:.2f}
+            
+            cv2.putText(quadro, f'{nome}', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, cor_texto, 2)
+            cv2.rectangle(quadro, (x, y), (x + w, y + h), (255, 0, 0), 2)  # Desenha um retângulo ao redor do rosto.
+        
+        cv2.imshow("Reconhecimento Facial", quadro)  # Mostra o quadro com reconhecimento.
+        
+        if cv2.waitKey(5) == 27:  # Sai do loop se a tecla 'Esc' for pressionada.
+            break
+
+
+# Função principal que executa o fluxo do programa.
+def main():
+    nome_pessoa = input("Digite o nome da pessoa: ")  # Solicita o nome da pessoa.
+    webcam = inicializar_webcam()  # Inicializa a webcam
+    diretorio_pessoa = criar_diretorio_faces(nome_pessoa)  # Cria diretório para a pessoa.
+    capturar_faces(webcam, diretorio_pessoa)  # Captura as faces da pessoa.
+    webcam.release()  # Libera a webcam.
+    
+    reconhecedor, ids_rotulos = treinar_reconhecedor('face-detector/faces/')  # Treina o reconhecedor.
+    reconhecedor.read("face_trained.yml")  # Carrega o modelo treinado.
+    
+    webcam = inicializar_webcam()  # Inicializa a webcam novamente.
+    reconhecer_faces(webcam, reconhecedor, ids_rotulos)  # Inicia o reconhecimento de faces.
+    webcam.release()  # Libera a webcam.
+    cv2.destroyAllWindows()  # Fecha todas as janelas abertas.
+
+if __name__ == "__main__":
+    main()  # Executa a função principal.

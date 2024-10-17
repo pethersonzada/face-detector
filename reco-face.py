@@ -119,14 +119,25 @@ def reconhecer_faces(webcam, reconhecedor, ids_rotulos):
 
 # Função principal que executa o fluxo do programa.
 def main():
-    nome_pessoa = input("Digite o nome da pessoa: ")  # Solicita o nome da pessoa.
-    webcam = inicializar_webcam()  # Inicializa a webcam
-    diretorio_pessoa = criar_diretorio_faces(nome_pessoa)  # Cria diretório para a pessoa.
-    capturar_faces(webcam, diretorio_pessoa)  # Captura as faces da pessoa.
-    webcam.release()  # Libera a webcam.
-    
+    while True:
+        adicionar_pessoa = input("Deseja adicionar uma nova pessoa? (s/n): ").strip().lower()
+        
+        if adicionar_pessoa == 's':
+            nome_pessoa = input("Digite o nome da pessoa: ")  # Solicita o nome da pessoa.
+            webcam = inicializar_webcam()  # Inicializa a webcam.
+            diretorio_pessoa = criar_diretorio_faces(nome_pessoa)  # Cria diretório para a pessoa.
+            capturar_faces(webcam, diretorio_pessoa)  # Captura as faces da pessoa.
+            webcam.release()  # Libera a webcam.
+        elif adicionar_pessoa == 'n':
+            break  # Sai do loop se o usuário não quiser adicionar mais pessoas.
+        else:
+            print("Opção inválida. Por favor, digite 's' ou 'n'.")
+
     reconhecedor, ids_rotulos = treinar_reconhecedor('face-detector/faces/')  # Treina o reconhecedor.
-    reconhecedor.read("face_trained.yml")  # Carrega o modelo treinado.
+    
+    # Carrega o modelo treinado, se ele existir.
+    if os.path.exists("face_trained.yml"):
+        reconhecedor.read("face_trained.yml")
     
     webcam = inicializar_webcam()  # Inicializa a webcam novamente.
     reconhecer_faces(webcam, reconhecedor, ids_rotulos)  # Inicia o reconhecimento de faces.

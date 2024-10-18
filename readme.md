@@ -1,3 +1,6 @@
+O objetivo deste projeto é implementar um sistema de reconhecimento facial nas escolas para substituir o método tradicional de chamada, permitindo um controle automatizado e preciso da presença de alunos. Além disso, o sistema visa otimizar o controle de fluxo de entrada e saída, garantindo maior segurança e eficiência no monitoramento do ambiente escolar. Com a tecnologia, o processo se torna mais rápido, reduzindo falhas humanas e fornecendo registros digitais em tempo real.
+
+
 Este projeto implementa um sistema de reconhecimento facial utilizando duas abordagens distintas:
 
 1. Reconhecimento com face_recognition: Utiliza a biblioteca face_recognition para detectar, codificar e reconhecer rostos em tempo real.
@@ -89,32 +92,4 @@ python reconhecimento_opencv_lbph.py
 
 4. Após o treinamento, o sistema estará pronto para reconhecer rostos em tempo real, exibindo o nome da pessoa ou "Desconhecido".
 
-
-
-Estrutura do Projeto
-
-.
-├── reconhecimento_face_recognition.py  # Script com face_recognition
-├── reconhecimento_opencv_lbph.py       # Script com OpenCV, Mediapipe e LBPH
-├── face-detector/                      # Diretório contendo os dados de treinamento LBPH
-│   ├── faces/                          # Imagens capturadas para treinamento
-│   └── face_trained.yml                # Modelo treinado LBPH
-└── Projeto/
-    └── rostos_conhecidos/              # Imagens de rostos salvos pelo face_recognition
-
-Contribuição
-
-1. Faça um fork deste repositório.
-
-
-2. Crie uma nova branch para suas alterações.
-
-
-3. Envie um pull request com uma descrição detalhada das suas alterações.
-
-
-
-Licença
-
-Este projeto é licenciado sob os termos da licença MIT.
-
+O objetivo do projeto é implementar a tecnologia de reconhecimento faci
